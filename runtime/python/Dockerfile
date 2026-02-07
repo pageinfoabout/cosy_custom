@@ -11,7 +11,7 @@ RUN apt-get update -y && apt-get install -y git unzip git-lfs g++
 RUN git lfs install
 
 # Clone CosyVoice
-RUN git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git
+RUN git clone --recursive https://github.com/pageinfoabout/cosy_custom.git
 
 # Install Python dependencies
 # IMPORTANT: install requirements first, then force HyperPyYAML + ruamel.yaml versions

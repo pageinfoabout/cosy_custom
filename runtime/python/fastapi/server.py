@@ -43,6 +43,10 @@ def generate_data(model_output):
         yield tts_audio
 
 
+@app.get("/speakers")
+async def list_speakers():
+    return {"speakers": list(cosyvoice.list_available_spks())}
+
 @app.get("/inference_sft")
 @app.post("/inference_sft")
 async def inference_sft(tts_text: str = Form(), spk_id: str = Form()):
