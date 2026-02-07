@@ -27,6 +27,8 @@ sys.path.append('{}/../../../third_party/Matcha-TTS'.format(ROOT_DIR))
 from cosyvoice.cli.cosyvoice import AutoModel
 from cosyvoice.utils.file_utils import load_wav
 
+cosyvoice = AutoModel(model_dir='pretrained_models/CosyVoice-300M-SFT')
+
 app = FastAPI()
 # set cross region allowance
 app.add_middleware(
