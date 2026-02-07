@@ -20,13 +20,24 @@ from fastapi import FastAPI, UploadFile, Form, File
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import io
 import numpy as np
+import torchaudio
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append('{}/../../..'.format(ROOT_DIR))
 sys.path.append('{}/../../../third_party/Matcha-TTS'.format(ROOT_DIR))
 from cosyvoice.cli.cosyvoice import AutoModel
 from cosyvoice.utils.file_utils import load_wav
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('tts_server.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('CosyVoiceTTS')
 
 app = FastAPI()
 # set cross region allowance
@@ -44,10 +55,51 @@ def generate_data(model_output):
         yield tts_audio
 
 cosyvoice = AutoModel(model_dir='pretrained_models/CosyVoice-300M-SFT')
-print(cosyvoice.list_available_spks())
+logger.info("✅ CosyVoice model loaded successfully")
+
+
+@app.post("/tts")
+async def tts(
+    text: str = Form(...), 
+    prompt_text: str = Form(...), 
+    prompt_wav: UploadFile = File(...)
+):
+    logger.info(f"🎤 TTS REQUEST: text='{text[:50]}...', prompt_text='{prompt_text}', wav_size={prompt_wav.size} bytes")
+    
+    try:
+        # ✅ STEP 1: Load uploaded WAV
+        logger.debug("📂 Loading reference WAV...")
+        wav_bytes = await prompt_wav.read()
+        with io.BytesIO(wav_bytes) as f:
+            ref_speech, sr = torchaudio.load(f)
+        logger.info(f"✅ WAV loaded: shape={ref_speech.shape}, sr={sr}")
+
+        # ✅ STEP 2: Zero-shot inference (YOUR EXACT LOGIC)
+        logger.debug("🔮 Running zero-shot inference...")
+        chunks = cosyvoice.inference_zero_shot(text, prompt_text, ref_speech, sr)
+        first_chunk = next(chunks)  # Get first chunk (usually the only one)
+        logger.info(f"✅ Inference complete: {len(first_chunk['tts_speech'].shape)}D tensor, chunks=1")
+
+        # ✅ STEP 3: Convert to WAV bytes
+        speech_np = (first_chunk['tts_speech'].squeeze().numpy() * 32767).astype(np.int16)
+        logger.info(f"✅ Audio ready: {speech_np.shape} samples, dtype=int16")
+
+        def generate():
+            logger.debug("📡 Streaming audio...")
+            yield speech_np.tobytes()
+            logger.debug("✅ Stream complete")
+
+        logger.info("🎵 TTS SUCCESS - returning audio")
+        return StreamingResponse(generate(), media_type="audio/wav")
+        
+    except Exception as e:
+        logger.error(f"💥 TTS ERROR: {str(e)}", exc_info=True)
+        raise
+
 
 @app.get("/speakers")
 async def list_speakers():
+    
    return cosyvoice.list_available_spks()
 
 @app.get("/inference_sft")
