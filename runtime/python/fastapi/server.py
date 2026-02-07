@@ -44,6 +44,7 @@ def generate_data(model_output):
         yield tts_audio
 
 cosyvoice = AutoModel(model_dir='pretrained_models/CosyVoice-300M-SFT')
+print(cosyvoice.list_available_spks())
 
 @app.get("/speakers")
 async def list_speakers():
