@@ -43,11 +43,11 @@ def generate_data(model_output):
         tts_audio = (i['tts_speech'].numpy() * (2 ** 15)).astype(np.int16).tobytes()
         yield tts_audio
 
+cosyvoice = AutoModel(model_dir='pretrained_models/CosyVoice-300M-SFT')
 
 @app.get("/speakers")
 async def list_speakers():
-    cosyvoice = AutoModel(model_dir='pretrained_models/CosyVoice-300M-SFT')
-    return cosyvoice.list_available_spks()
+   return cosyvoice.list_available_spks()
 
 @app.get("/inference_sft")
 @app.post("/inference_sft")
