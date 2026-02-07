@@ -27,7 +27,6 @@ sys.path.append('{}/../../../third_party/Matcha-TTS'.format(ROOT_DIR))
 from cosyvoice.cli.cosyvoice import AutoModel
 from cosyvoice.utils.file_utils import load_wav
 
-cosyvoice = AutoModel(model_dir='pretrained_models/CosyVoice-300M-SFT')
 
 app = FastAPI()
 # set cross region allowance
@@ -47,7 +46,8 @@ def generate_data(model_output):
 
 @app.get("/speakers")
 async def list_speakers():
-    return {"speakers": list(cosyvoice.list_available_spks())}
+    cosyvoice = AutoModel(model_dir='pretrained_models/CosyVoice-300M-SFT')
+    return cosyvoice.list_available_spks()
 
 @app.get("/inference_sft")
 @app.post("/inference_sft")
