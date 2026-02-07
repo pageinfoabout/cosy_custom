@@ -59,20 +59,10 @@ async def inference_sft(tts_text: str = Form(), spk_id: str = Form()):
 
 @app.get("/inference_zero_shot")
 @app.post("/inference_zero_shot")
-async def inference_zero_shot(
-    tts_text: str = Form(), 
-    prompt_text: str = Form(), 
-    prompt_wav: UploadFile = File()
-):
-    # FIXED: Use .read() not .file
-    wav_bytes = await prompt_wav.read()  # bytes
-    prompt_speech_16k, sr = load_wav(wav_bytes, 16000)  # tensor
-    
-    model_output = cosyvoice.inference_zero_shot(
-        tts_text, prompt_text, prompt_speech_16k
-    )
-    
-    return StreamingResponse(generate_data(model_output), media_type="audio/pcm")
+async def inference_zero_shot(tts_text: str = Form(), prompt_text: str = Form(), prompt_wav: UploadFile = File()):
+    prompt_speech_16k = load_wav(prompt_wav.file, 16000)
+    model_output = cosyvoice.inference_zero_shot(tts_text, prompt_text, prompt_speech_16k)
+    return StreamingResponse(generate_data(model_output))
 
 @app.get("/inference_cross_lingual")
 @app.post("/inference_cross_lingual")
